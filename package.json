@@ -1,0 +1,43 @@
+{
+  "name": "auth-service",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GolosChain/auth-service.git"
+  },
+  "author": "Ivan Chernyshev <tcherivan@gmail.com>",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/GolosChain/auth-service/issues"
+  },
+  "homepage": "https://github.com/GolosChain/auth-service#readme",
+  "description": "",
+  "dependencies": {
+    "@types/randomstring": "^1.1.6",
+    "gls-core-service": "^2.17.0",
+    "golos-js": "^0.7.7",
+    "randomstring": "^1.1.5"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "tabWidth": 4,
+    "semi": true,
+    "trailingComma": "es5",
+    "printWidth": 100,
+    "overrides": [
+      {
+        "files": [
+          "*.yml",
+          "*.json"
+        ],
+        "options": {
+          "tabWidth": 2
+        }
+      }
+    ]
+  }
+}
