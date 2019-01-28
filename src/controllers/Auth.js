@@ -1,10 +1,18 @@
 const core = require('gls-core-service');
 const Basic = core.controllers.Basic;
 const random = require('randomstring');
+const crypto = require('crypto');
 const golos = require('golos-js');
 
 class Auth extends Basic {
-    async authorize({ user, sign, secret, ...data }) {
+    constructor({ connector }) {
+        super({ connector });
+        this._secretMap = new Map();
+    }
+    async authorize({ user, sign, secret, channelId, ...data }) {
+        if (this._secretMap.get(channelId) !== secret) {
+            throw { code: 1103, message: 'Secret verification failed - access denied' };
+        }
         const signObject = this._makeUserFakeTransactionObject(user, sign, secret);
 
         try {
@@ -42,8 +50,15 @@ class Auth extends Basic {
         };
     }
 
-    async generateSecret() {
-        return random.generate();
+    async generateSecret({ channelId }) {
+        const salt = random.generate();
+        const hash = crypto.createHash('sha1');
+        const secret = hash
+            .update(Buffer.from(salt + channelId))
+            .digest()
+            .toString('hex');
+        this._secretMap.set(channelId, secret);
+        return secret;
     }
 }
 
