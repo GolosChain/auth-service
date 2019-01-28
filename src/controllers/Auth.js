@@ -1,7 +1,7 @@
-const core = require('gls-core-service');
-const Basic = core.controllers.Basic;
 const random = require('randomstring');
 const crypto = require('crypto');
+const core = require('gls-core-service');
+const Basic = core.controllers.Basic;
 const golos = require('golos-js');
 
 class Auth extends Basic {
