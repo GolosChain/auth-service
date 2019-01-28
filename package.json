@@ -9,13 +9,13 @@
     "type": "git",
     "url": "git+https://github.com/GolosChain/auth-service.git"
   },
-  "author": "Ivan Chernyshev <tcherivan@gmail.com>",
+  "author": "golos.io",
   "license": "GPL-3.0",
   "bugs": {
     "url": "https://github.com/GolosChain/auth-service/issues"
   },
   "homepage": "https://github.com/GolosChain/auth-service#readme",
-  "description": "",
+  "description": "**Auth service** является сервисом для авторизации запросов к [golos.io](https://golos.io). Для работы сервису необходим совместимый фасад-сервис, осуществляющий конечное общение с системой.",
   "dependencies": {
     "@types/randomstring": "^1.1.6",
     "gls-core-service": "^2.17.0",
@@ -39,5 +39,6 @@
         }
       }
     ]
-  }
+  },
+  "devDependencies": {}
 }
