@@ -18,9 +18,6 @@ class Connector extends BasicConnector {
                 'auth.authorize': auth.authorize.bind(auth),
                 'auth.generateSecret': auth.generateSecret.bind(auth),
             },
-            requiredClients: {
-                frontend: env.GLS_FRONTEND_GATE_CONNECT,
-            },
         });
     }
 }
