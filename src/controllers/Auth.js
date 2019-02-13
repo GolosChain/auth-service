@@ -7,7 +7,8 @@ const { JsonRpc } = require('cyberwayjs');
 const Signature = require('eosjs-ecc/lib/signature');
 const { convertLegacyPublicKey } = require('cyberwayjs/dist/eosjs-numeric');
 const Basic = core.controllers.Basic;
-const RPC = new JsonRpc(env.CMN_CYBERWAY_HTTP_URL, { fetch });
+const Logger = core.utils.Logger;
+const RPC = new JsonRpc(env.GLS_CYBERWAY_HTTP_URL, { fetch });
 
 class Auth extends Basic {
     constructor({ connector }) {
@@ -17,10 +18,10 @@ class Auth extends Basic {
     async authorize({ user, sign, secret, channelId }) {
         const storedSecret = this._secretMap.get(channelId);
         secret = Buffer.from(secret);
+
         if (!storedSecret.equals(secret)) {
             throw { code: 1103, message: 'Secret verification failed - access denied' };
         }
-
         const transactionObject = {
             transaction: { serializedTransaction: secret, signatures: [sign] },
         };
@@ -31,10 +32,10 @@ class Auth extends Basic {
         const publicKeyFromTransaction = convertLegacyPublicKey(
             this._getPublicKeyFromTransaction(transactionObject)
         );
+
         if (publicKeyFromBlockchain !== publicKeyFromTransaction) {
             throw { code: 1103, message: 'Secret verification failed - access denied' };
         }
-
         const publicKeyVerified = this._verifyKey({
             ...transactionObject,
             publicKey: publicKeyFromBlockchain,
@@ -43,7 +44,6 @@ class Auth extends Basic {
         if (!publicKeyVerified) {
             throw { code: 1103, message: 'Secret verification failed - access denied' };
         }
-
         this._secretMap.delete(channelId);
 
         return {
@@ -57,16 +57,15 @@ class Auth extends Basic {
             const sgn = Signature.from(signatures[0]);
             return sgn.verify(serializedTransaction, publicKey);
         } catch (error) {
-            console.log(error);
-
+            Logger.error(error);
             return false;
         }
     }
 
     _getPublicKeyFromTransaction({ transaction: { serializedTransaction, signatures } }) {
         const sgn = Signature.from(signatures[0]);
-        const legacyPublicKKey = sgn.recover(serializedTransaction).toString();
-        return legacyPublicKKey.replace('EOS', 'GLS');
+        const legacyPublicKey = sgn.recover(serializedTransaction).toString();
+        return legacyPublicKey.replace('EOS', 'GLS');
     }
     async _getPublicKeyFromBc({ username } = {}) {
         const accountData = await RPC.get_account(username);
@@ -88,8 +87,10 @@ class Auth extends Basic {
             .update(Buffer.from(salt + channelId))
             .digest()
             .toString('hex');
+
         const serializedSecret = Buffer.from(secret);
         this._secretMap.set(channelId, serializedSecret);
+
         return { secret };
     }
 }
