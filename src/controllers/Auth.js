@@ -29,13 +29,7 @@ class Auth extends Basic {
         const publicKeyFromBlockchain = convertLegacyPublicKey(
             await this._getPublicKeyFromBc({ username: user })
         );
-        const publicKeyFromTransaction = convertLegacyPublicKey(
-            this._getPublicKeyFromTransaction(transactionObject)
-        );
 
-        if (publicKeyFromBlockchain !== publicKeyFromTransaction) {
-            throw { code: 1103, message: 'Secret verification failed - access denied' };
-        }
         const publicKeyVerified = this._verifyKey({
             ...transactionObject,
             publicKey: publicKeyFromBlockchain,
@@ -60,12 +54,6 @@ class Auth extends Basic {
             Logger.error(error);
             return false;
         }
-    }
-
-    _getPublicKeyFromTransaction({ transaction: { serializedTransaction, signatures } }) {
-        const sgn = Signature.from(signatures[0]);
-        const legacyPublicKey = sgn.recover(serializedTransaction).toString();
-        return legacyPublicKey.replace('EOS', 'GLS');
     }
     async _getPublicKeyFromBc({ username } = {}) {
         const accountData = await RPC.get_account(username);
