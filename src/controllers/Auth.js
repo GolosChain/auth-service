@@ -17,9 +17,9 @@ class Auth extends Basic {
     }
     async authorize({ user, sign, secret, channelId }) {
         const storedSecret = this._secretMap.get(channelId);
-        secret = Buffer.from(secret);
+        const secretBuffer = Buffer.from(secret);
 
-        if (!storedSecret.equals(secret)) {
+        if (!storedSecret.equals(secretBuffer)) {
             throw { code: 1103, message: 'Secret verification failed - access denied' };
         }
 
@@ -28,7 +28,7 @@ class Auth extends Basic {
         );
 
         const publicKeyVerified = this._verifyKey({
-            serializedTransaction: secret,
+            secretBuffer,
             sign,
             publicKey,
         });
@@ -44,10 +44,10 @@ class Auth extends Basic {
         };
     }
 
-    _verifyKey({ serializedTransaction, sign, publicKey }) {
+    _verifyKey({ secretBuffer, sign, publicKey }) {
         try {
             const sgn = Signature.from(sign);
-            return sgn.verify(serializedTransaction, publicKey);
+            return sgn.verify(secretBuffer, publicKey);
         } catch (error) {
             Logger.error(error);
             return false;
