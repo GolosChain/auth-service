@@ -69,10 +69,10 @@ class Auth extends Basic {
     }
 
     async generateSecret({ channelId }) {
-        const salt = random.generate();
+        const seed = random.generate();
         const hash = crypto.createHash('sha1');
         const secret = hash
-            .update(Buffer.from(salt + channelId))
+            .update(Buffer.from(seed + channelId))
             .digest()
             .toString('hex');
 
