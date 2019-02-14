@@ -1,64 +1,83 @@
 const random = require('randomstring');
 const crypto = require('crypto');
+const fetch = require('node-fetch');
 const core = require('gls-core-service');
+const { JsonRpc } = require('cyberwayjs');
+const Signature = require('eosjs-ecc/lib/signature');
+const { convertLegacyPublicKey } = require('cyberwayjs/dist/eosjs-numeric');
+const env = require('../data/env');
 const Basic = core.controllers.Basic;
-const golos = require('golos-js');
+const Logger = core.utils.Logger;
+const RPC = new JsonRpc(env.GLS_CYBERWAY_HTTP_URL, { fetch });
 
 class Auth extends Basic {
     constructor({ connector }) {
         super({ connector });
         this._secretMap = new Map();
     }
-    async authorize({ user, sign, secret, channelId, ...data }) {
-        if (this._secretMap.get(channelId) !== secret) {
+    async authorize({ user, sign, secret, channelId }) {
+        const storedSecret = this._secretMap.get(channelId);
+        const secretBuffer = Buffer.from(secret);
+
+        if (!storedSecret.equals(secretBuffer)) {
             throw { code: 1103, message: 'Secret verification failed - access denied' };
         }
-        const signObject = this._makeUserFakeTransactionObject(user, sign, secret);
 
-        try {
-            await golos.api.verifyAuthorityAsync(signObject);
-        } catch (error) {
-            throw { code: 1103, message: 'Blockchain verification failed - access denied' };
+        const publicKey = convertLegacyPublicKey(
+            await this._getPublicKeyFromBc({ username: user })
+        );
+
+        const publicKeyVerified = this._verifyKey({
+            secretBuffer,
+            sign,
+            publicKey,
+        });
+
+        if (!publicKeyVerified) {
+            throw { code: 1103, message: 'Secret verification failed - access denied' };
         }
+        this._secretMap.delete(channelId);
 
         return {
-            ...data,
-            sign,
             user,
             roles: [],
         };
     }
 
-    _makeUserFakeTransactionObject(user, sign, secret) {
-        return {
-            ref_block_num: 3367,
-            ref_block_prefix: 879276768,
-            expiration: '2018-07-06T14:52:24',
-            operations: [
-                [
-                    'vote',
-                    {
-                        voter: user,
-                        author: 'test',
-                        permlink: secret,
-                        weight: 1,
-                    },
-                ],
-            ],
-            extensions: [],
-            signatures: [sign],
-        };
+    _verifyKey({ secretBuffer, sign, publicKey }) {
+        try {
+            const sgn = Signature.from(sign);
+            return sgn.verify(secretBuffer, publicKey);
+        } catch (error) {
+            Logger.error(error);
+            return false;
+        }
+    }
+    async _getPublicKeyFromBc({ username } = {}) {
+        const accountData = await RPC.get_account(username);
+
+        if (!accountData) {
+            throw {
+                code: 11011,
+                message: 'Such an account does not exist',
+            };
+        }
+
+        return accountData.permissions[0].required_auth.keys[0].key;
     }
 
     async generateSecret({ channelId }) {
-        const salt = random.generate();
+        const seed = random.generate();
         const hash = crypto.createHash('sha1');
         const secret = hash
-            .update(Buffer.from(salt + channelId))
+            .update(Buffer.from(seed + channelId))
             .digest()
             .toString('hex');
-        this._secretMap.set(channelId, secret);
-        return secret;
+
+        const serializedSecret = Buffer.from(secret);
+        this._secretMap.set(channelId, serializedSecret);
+
+        return { secret };
     }
 }
 
