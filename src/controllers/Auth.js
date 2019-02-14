@@ -2,10 +2,10 @@ const random = require('randomstring');
 const crypto = require('crypto');
 const fetch = require('node-fetch');
 const core = require('gls-core-service');
-const env = require('../data/env');
 const { JsonRpc } = require('cyberwayjs');
 const Signature = require('eosjs-ecc/lib/signature');
 const { convertLegacyPublicKey } = require('cyberwayjs/dist/eosjs-numeric');
+const env = require('../data/env');
 const Basic = core.controllers.Basic;
 const Logger = core.utils.Logger;
 const RPC = new JsonRpc(env.GLS_CYBERWAY_HTTP_URL, { fetch });
@@ -22,17 +22,15 @@ class Auth extends Basic {
         if (!storedSecret.equals(secret)) {
             throw { code: 1103, message: 'Secret verification failed - access denied' };
         }
-        const transactionObject = {
-            transaction: { serializedTransaction: secret, signatures: [sign] },
-        };
 
-        const publicKeyFromBlockchain = convertLegacyPublicKey(
+        const publicKey = convertLegacyPublicKey(
             await this._getPublicKeyFromBc({ username: user })
         );
 
         const publicKeyVerified = this._verifyKey({
-            ...transactionObject,
-            publicKey: publicKeyFromBlockchain,
+            serializedTransaction: secret,
+            sign,
+            publicKey,
         });
 
         if (!publicKeyVerified) {
@@ -46,9 +44,9 @@ class Auth extends Basic {
         };
     }
 
-    _verifyKey({ transaction: { serializedTransaction, signatures }, publicKey }) {
+    _verifyKey({ serializedTransaction, sign, publicKey }) {
         try {
-            const sgn = Signature.from(signatures[0]);
+            const sgn = Signature.from(sign);
             return sgn.verify(serializedTransaction, publicKey);
         } catch (error) {
             Logger.error(error);
