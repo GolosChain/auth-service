@@ -16,6 +16,8 @@ class Auth extends Basic {
         this._secretMap = new Map();
     }
     async authorize({ user, sign, secret, channelId }) {
+        this._verifyParamsOrThrow({ user, sign, secret, channelId });
+
         const storedSecret = this._secretMap.get(channelId);
         const secretBuffer = Buffer.from(secret);
 
@@ -42,6 +44,12 @@ class Auth extends Basic {
             user,
             roles: [],
         };
+    }
+
+    _verifyParamsOrThrow({ user, sign, secret, channelId }) {
+        if (!user || !sign || !secret || !channelId) {
+            throw { code: 1102, message: 'Service failed - not all params are set' };
+        }
     }
 
     _verifyKey({ secretBuffer, sign, publicKey }) {
