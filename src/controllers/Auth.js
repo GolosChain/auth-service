@@ -25,17 +25,15 @@ class Auth extends Basic {
             throw { code: 1103, message: 'Secret verification failed - access denied' };
         }
 
-        const publicKey = convertLegacyPublicKey(
-            await this._getPublicKeyFromBc({ username: user })
-        );
+        const publicKeys = await this._getPublicKeyFromBc({ username: user });
 
-        const publicKeyVerified = this._verifyKey({
+        const publicKeysVerified = this._verifyKeys({
             secretBuffer,
             sign,
-            publicKey,
+            publicKeys,
         });
 
-        if (!publicKeyVerified) {
+        if (!publicKeysVerified) {
             throw { code: 1103, message: 'Secret verification failed - access denied' };
         }
         this._secretMap.delete(channelId);
@@ -52,14 +50,23 @@ class Auth extends Basic {
         }
     }
 
-    _verifyKey({ secretBuffer, sign, publicKey }) {
-        try {
-            const sgn = Signature.from(sign);
-            return sgn.verify(secretBuffer, publicKey);
-        } catch (error) {
-            Logger.error(error);
-            return false;
+    _verifyKeys({ secretBuffer, sign, publicKeys }) {
+        let verified = false;
+        for (const publicKey of publicKeys) {
+            try {
+                const sgn = Signature.from(sign);
+                sgn.verify(secretBuffer, publicKey);
+                verified = true;
+            } catch (error) {
+                Logger.error(error);
+            } finally {
+                if (verified) {
+                    return true;
+                }
+            }
         }
+
+        return false;
     }
     async _getPublicKeyFromBc({ username } = {}) {
         const accountData = await RPC.get_account(username);
@@ -71,7 +78,9 @@ class Auth extends Basic {
             };
         }
 
-        return accountData.permissions[0].required_auth.keys[0].key;
+        return accountData.permissions.map(permission =>
+            convertLegacyPublicKey(permission.required_auth.keys[0].key)
+        );
     }
 
     async generateSecret({ channelId }) {
