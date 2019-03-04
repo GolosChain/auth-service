@@ -54,8 +54,10 @@ class Auth extends Basic {
         for (const publicKey of publicKeys) {
             try {
                 const signature = Signature.from(sign);
-                signature.verify(secretBuffer, publicKey);
-                return true;
+                const verified = signature.verify(secretBuffer, publicKey);
+                if (verified) {
+                    return true;
+                }
             } catch (error) {
                 Logger.error('Key cannot be verified --', error.stack);
             }
