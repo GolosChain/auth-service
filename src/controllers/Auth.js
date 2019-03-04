@@ -51,7 +51,15 @@ class Auth extends Basic {
     }
 
     _verifyKeys({ secretBuffer, sign, publicKeys }) {
-        const signature = Signature.from(sign);
+        let signature;
+        try {
+            signature = Signature.from(sign);
+        } catch (error) {
+            throw {
+                code: 1102,
+                message: 'Sign is not a valid signature',
+            };
+        }
         for (const publicKey of publicKeys) {
             try {
                 const verified = signature.verify(secretBuffer, publicKey);
