@@ -27,13 +27,13 @@ class Auth extends Basic {
 
         const publicKeys = await this._getPublicKeyFromBc({ username: user });
 
-        const publicKeysVerified = this._verifyKeys({
+        const publicKeysPermission = this._verifyKeys({
             secretBuffer,
             sign,
             publicKeys,
         });
 
-        if (!publicKeysVerified) {
+        if (!publicKeysPermission) {
             throw { code: 1103, message: 'Secret verification failed - access denied' };
         }
         this._secretMap.delete(channelId);
@@ -41,6 +41,7 @@ class Auth extends Basic {
         return {
             user,
             roles: [],
+            permission: publicKeysPermission,
         };
     }
 
@@ -60,11 +61,11 @@ class Auth extends Basic {
                 message: 'Sign is not a valid signature',
             };
         }
-        for (const publicKey of publicKeys) {
+        for (const { publicKey, permission } of publicKeys) {
             try {
                 const verified = signature.verify(secretBuffer, publicKey);
                 if (verified) {
-                    return true;
+                    return permission;
                 }
             } catch (error) {
                 Logger.error('Key cannot be verified --', error.stack);
@@ -83,9 +84,12 @@ class Auth extends Basic {
             };
         }
 
-        return accountData.permissions.map(permission =>
-            convertLegacyPublicKey(permission.required_auth.keys[0].key)
-        );
+        return accountData.permissions.map(permission => {
+            return {
+                publicKey: convertLegacyPublicKey(permission.required_auth.keys[0].key),
+                permission: permission.perm_name,
+            };
+        });
     }
 
     async generateSecret({ channelId }) {
