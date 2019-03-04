@@ -25,17 +25,15 @@ class Auth extends Basic {
             throw { code: 1103, message: 'Secret verification failed - access denied' };
         }
 
-        const publicKey = convertLegacyPublicKey(
-            await this._getPublicKeyFromBc({ username: user })
-        );
+        const publicKeys = await this._getPublicKeyFromBc({ username: user });
 
-        const publicKeyVerified = this._verifyKey({
+        const publicKeysVerified = this._verifyKeys({
             secretBuffer,
             sign,
-            publicKey,
+            publicKeys,
         });
 
-        if (!publicKeyVerified) {
+        if (!publicKeysVerified) {
             throw { code: 1103, message: 'Secret verification failed - access denied' };
         }
         this._secretMap.delete(channelId);
@@ -52,14 +50,28 @@ class Auth extends Basic {
         }
     }
 
-    _verifyKey({ secretBuffer, sign, publicKey }) {
+    _verifyKeys({ secretBuffer, sign, publicKeys }) {
+        let signature;
         try {
-            const sgn = Signature.from(sign);
-            return sgn.verify(secretBuffer, publicKey);
+            signature = Signature.from(sign);
         } catch (error) {
-            Logger.error(error);
-            return false;
+            throw {
+                code: 1102,
+                message: 'Sign is not a valid signature',
+            };
         }
+        for (const publicKey of publicKeys) {
+            try {
+                const verified = signature.verify(secretBuffer, publicKey);
+                if (verified) {
+                    return true;
+                }
+            } catch (error) {
+                Logger.error('Key cannot be verified --', error.stack);
+            }
+        }
+
+        return false;
     }
     async _getPublicKeyFromBc({ username } = {}) {
         const accountData = await RPC.get_account(username);
@@ -71,7 +83,9 @@ class Auth extends Basic {
             };
         }
 
-        return accountData.permissions[0].required_auth.keys[0].key;
+        return accountData.permissions.map(permission =>
+            convertLegacyPublicKey(permission.required_auth.keys[0].key)
+        );
     }
 
     async generateSecret({ channelId }) {
