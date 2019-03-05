@@ -21,6 +21,16 @@ class Auth extends Basic {
         const storedSecret = this._secretMap.get(channelId);
         const secretBuffer = Buffer.from(secret);
 
+        if (!storedSecret) {
+            Logger.error('Auth error -- stored secret does not exist');
+
+            throw {
+                code: 1102,
+                message:
+                    "There is no secret stored for this channelId. Probably, client's already authorized",
+            };
+        }
+
         if (!storedSecret.equals(secretBuffer)) {
             throw { code: 1103, message: 'Secret verification failed - access denied' };
         }
@@ -93,6 +103,14 @@ class Auth extends Basic {
     }
 
     async generateSecret({ channelId }) {
+        const existedSecret = this._secretMap.get(channelId);
+
+        if (existedSecret) {
+            return {
+                secret: existedSecret.toString(),
+            };
+        }
+
         const seed = random.generate();
         const hash = crypto.createHash('sha1');
         const secret = hash
