@@ -35,6 +35,8 @@ class Auth extends Basic {
             throw { code: 1103, message: 'Secret verification failed - access denied' };
         }
 
+        user = await this._resolveName(user);
+
         const publicKeys = await this._getPublicKeyFromBc({ username: user });
 
         const publicKeysPermission = this._verifyKeys({
@@ -53,6 +55,18 @@ class Auth extends Basic {
             roles: [],
             permission: publicKeysPermission,
         };
+    }
+
+    async _resolveName(user) {
+        if (user.includes('@')) {
+            try {
+                const resolved = await RPC.fetch('/v1/chain/resolve_names', [user]);
+                return resolved[0].resolved_username;
+            } catch (error) {
+                Logger.error('Error resolve account name -- ', error);
+            }
+        }
+        return user;
     }
 
     _verifyParamsOrThrow({ user, sign, secret, channelId }) {
@@ -85,21 +99,22 @@ class Auth extends Basic {
         return false;
     }
     async _getPublicKeyFromBc({ username } = {}) {
-        const accountData = await RPC.get_account(username);
+        try {
+            const accountData = await RPC.get_account(username);
 
-        if (!accountData) {
+            return accountData.permissions.map(permission => {
+                return {
+                    publicKey: convertLegacyPublicKey(permission.required_auth.keys[0].key),
+                    permission: permission.perm_name,
+                };
+            });
+        } catch (error) {
             throw {
                 code: 11011,
-                message: 'Such an account does not exist',
+                message: 'Cannot get such account from BC',
+                error,
             };
         }
-
-        return accountData.permissions.map(permission => {
-            return {
-                publicKey: convertLegacyPublicKey(permission.required_auth.keys[0].key),
-                permission: permission.perm_name,
-            };
-        });
     }
 
     async generateSecret({ channelId }) {
