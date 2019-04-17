@@ -24,7 +24,7 @@
     "@types/randomstring": "^1.1.6",
     "assert": "^1.4.1",
     "bigi": "^1.4.2",
-    "cyberwayjs": "^20.0.0-beta3.4",
+    "cyberwayjs": "^20.0.0-beta3.5",
     "ecurve": "^1.0.6",
     "eosjs": "^20.0.0-beta3",
     "eosjs-ecc": "^4.0.4",
