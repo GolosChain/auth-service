@@ -35,7 +35,9 @@ class Auth extends Basic {
             throw { code: 1103, message: 'Secret verification failed - access denied' };
         }
 
-        const publicKeys = await this._getPublicKeyFromBc({ username: user });
+        const { displayName, accountName } = await this._resolveNames(user);
+
+        const publicKeys = await this._getPublicKeyFromBc({ username: accountName });
 
         const publicKeysPermission = this._verifyKeys({
             secretBuffer,
@@ -49,10 +51,26 @@ class Auth extends Basic {
         this._secretMap.delete(channelId);
 
         return {
-            user,
+            user: accountName,
+            displayName,
             roles: [],
             permission: publicKeysPermission,
         };
+    }
+
+    async _resolveNames(user) {
+        const names = { displayName: user, accountName: user };
+        if (user.includes('@')) {
+            try {
+                const resolved = await RPC.fetch('/v1/chain/resolve_names', [user]);
+                Logger.info(JSON.stringify(resolved, null, 4));
+                names.accountName = resolved[0].resolved_username;
+                names.displayName = user.split('@')[0];
+            } catch (error) {
+                Logger.error('Error resolve account name -- ', error);
+            }
+        }
+        return names;
     }
 
     _verifyParamsOrThrow({ user, sign, secret, channelId }) {
@@ -85,21 +103,22 @@ class Auth extends Basic {
         return false;
     }
     async _getPublicKeyFromBc({ username } = {}) {
-        const accountData = await RPC.get_account(username);
+        try {
+            const accountData = await RPC.get_account(username);
 
-        if (!accountData) {
+            return accountData.permissions.map(permission => {
+                return {
+                    publicKey: convertLegacyPublicKey(permission.required_auth.keys[0].key),
+                    permission: permission.perm_name,
+                };
+            });
+        } catch (error) {
             throw {
                 code: 11011,
-                message: 'Such an account does not exist',
+                message: 'Cannot get such account from BC',
+                error,
             };
         }
-
-        return accountData.permissions.map(permission => {
-            return {
-                publicKey: convertLegacyPublicKey(permission.required_auth.keys[0].key),
-                permission: permission.perm_name,
-            };
-        });
     }
 
     async generateSecret({ channelId }) {
