@@ -63,7 +63,6 @@ class Auth extends Basic {
         if (user.includes('@')) {
             try {
                 const resolved = await RPC.fetch('/v1/chain/resolve_names', [user]);
-                Logger.info(JSON.stringify(resolved, null, 4));
                 names.accountName = resolved[0].resolved_username;
                 names.displayName = user.split('@')[0];
             } catch (error) {
