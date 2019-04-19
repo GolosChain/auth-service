@@ -46,7 +46,15 @@ class Auth extends Basic {
         });
 
         if (!publicKeysPermission) {
-            throw { code: 1103, message: 'Secret verification failed - access denied' };
+            Logger.error(
+                'Public key is not valid',
+                JSON.stringify(
+                    { publicKeysPermission, publicKeys, displayName, accountName },
+                    null,
+                    2
+                )
+            );
+            throw { code: 1103, message: 'Public key verification failed - access denied' };
         }
         this._secretMap.delete(channelId);
 
