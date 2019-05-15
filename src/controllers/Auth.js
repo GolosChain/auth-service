@@ -120,10 +120,10 @@ class Auth extends Basic {
                 };
             });
         } catch (error) {
+            Logger.error(error);
             throw {
                 code: 11011,
                 message: 'Cannot get such account from BC',
-                error,
             };
         }
     }
