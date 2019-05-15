@@ -68,15 +68,17 @@ class Auth extends Basic {
 
     async _resolveNames(user) {
         const names = { displayName: user, accountName: user };
-        if (user.includes('@')) {
-            try {
-                const resolved = await RPC.fetch('/v1/chain/resolve_names', [user]);
-                names.accountName = resolved[0].resolved_username;
-                names.displayName = user.split('@')[0];
-            } catch (error) {
-                Logger.error('Error resolve account name -- ', error);
-            }
+        if (!user.includes('@')) {
+            user = `${user}@golos`;
         }
+        try {
+            const resolved = await RPC.fetch('/v1/chain/resolve_names', [user]);
+            names.accountName = resolved[0].resolved_username;
+            names.displayName = user.split('@')[0];
+        } catch (error) {
+            Logger.error('Error resolve account name -- ', error);
+        }
+
         return names;
     }
 
