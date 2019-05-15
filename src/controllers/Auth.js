@@ -37,45 +37,52 @@ class Auth extends Basic {
 
         const { displayName, accountName } = await this._resolveNames(user);
 
-        const publicKeys = await this._getPublicKeyFromBc({ username: accountName });
+        try {
+            const publicKeys = await this._getPublicKeyFromBc({ username: accountName });
 
-        const publicKeysPermission = this._verifyKeys({
-            secretBuffer,
-            sign,
-            publicKeys,
-        });
+            const publicKeysPermission = this._verifyKeys({
+                secretBuffer,
+                sign,
+                publicKeys,
+            });
 
-        if (!publicKeysPermission) {
-            Logger.error(
-                'Public key is not valid',
-                JSON.stringify(
-                    { publicKeysPermission, publicKeys, displayName, accountName },
-                    null,
-                    2
-                )
-            );
-            throw { code: 1103, message: 'Public key verification failed - access denied' };
+            if (!publicKeysPermission) {
+                Logger.error(
+                    'Public key is not valid',
+                    JSON.stringify(
+                        { publicKeysPermission, publicKeys, displayName, accountName },
+                        null,
+                        2
+                    )
+                );
+                throw { code: 1103, message: 'Public key verification failed - access denied' };
+            }
+            this._secretMap.delete(channelId);
+
+            return {
+                user: accountName,
+                displayName,
+                roles: [],
+                permission: publicKeysPermission,
+            };
+        } catch (error) {
+            if (user.includes('@')) {
+                throw error;
+            } else {
+                return await this.authorize({ user: `${user}@golos`, sign, secret, channelId });
+            }
         }
-        this._secretMap.delete(channelId);
-
-        return {
-            user: accountName,
-            displayName,
-            roles: [],
-            permission: publicKeysPermission,
-        };
     }
 
     async _resolveNames(user) {
         const names = { displayName: user, accountName: user };
-        try {
-            const resolved = await RPC.fetch('/v1/chain/resolve_names', [user]);
-            names.accountName = resolved[0].resolved_username;
-            names.displayName = user;
-        } catch (error) {
-            Logger.error('Error resolve account name -- ', error);
-            if (!user.includes('@')) {
-                return this._resolveNames(`${user}@golos`);
+        if (user.includes('@')) {
+            try {
+                const resolved = await RPC.fetch('/v1/chain/resolve_names', [user]);
+                names.accountName = resolved[0].resolved_username;
+                names.displayName = user.split('@')[0];
+            } catch (error) {
+                Logger.error('Error resolve account name -- ', error);
             }
         }
         return names;
