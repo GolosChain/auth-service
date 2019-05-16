@@ -74,7 +74,7 @@ class Auth extends Basic {
                 names.accountName = resolved[0].resolved_username;
                 names.displayName = user.split('@')[0];
             } catch (error) {
-                Logger.error('Error resolve account name -- ', error);
+                Logger.error('Error resolve account name -- ', JSON.stringify(error, null, 4));
             }
         }
         return names;
@@ -120,7 +120,7 @@ class Auth extends Basic {
                 };
             });
         } catch (error) {
-            Logger.error(error);
+            Logger.error(JSON.stringify(error, null, 4));
             throw {
                 code: 11011,
                 message: 'Cannot get such account from BC',
