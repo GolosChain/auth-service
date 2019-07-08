@@ -1,6 +1,5 @@
 const core = require('gls-core-service');
 const BasicConnector = core.services.Connector;
-const env = require('../data/env');
 const Auth = require('../controllers/Auth');
 
 class Connector extends BasicConnector {

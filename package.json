@@ -17,14 +17,9 @@
   "homepage": "https://github.com/GolosChain/auth-service#readme",
   "description": "**Auth service** является сервисом для авторизации запросов к [golos.io](https://golos.io). Для работы сервису необходим совместимый фасад-сервис, осуществляющий конечное общение с системой.",
   "dependencies": {
-    "assert": "^1.4.1",
-    "bigi": "^1.4.2",
-    "cyberwayjs": "^20.0.0-beta5",
-    "ecurve": "^1.0.6",
-    "eosjs": "^20.0.0-beta3",
+    "cyberwayjs": "^20.0.0-beta7",
     "eosjs-ecc": "^4.0.4",
-    "gls-core-service": "^2.17.0",
-    "golos-js": "^0.7.7",
+    "gls-core-service": "^3.42.1",
     "node-fetch": "^2.3.0",
     "randomstring": "^1.1.5"
   },

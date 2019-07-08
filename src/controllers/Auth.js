@@ -15,6 +15,8 @@ class Auth extends Basic {
         super({ connector });
         this._secretMap = new Map();
     }
+
+    // TODO Refactor in next iteration
     async authorize({ user, sign, secret, channelId }) {
         this._verifyParamsOrThrow({ user, sign, secret, channelId });
 
@@ -96,6 +98,7 @@ class Auth extends Basic {
 
     _verifyKeys({ secretBuffer, sign, publicKeys }) {
         let signature;
+
         try {
             signature = Signature.from(sign);
         } catch (error) {
@@ -104,6 +107,7 @@ class Auth extends Basic {
                 message: 'Sign is not a valid signature',
             };
         }
+
         for (const { publicKey, permission } of publicKeys) {
             try {
                 const verified = signature.verify(secretBuffer, publicKey);
@@ -117,6 +121,7 @@ class Auth extends Basic {
 
         return false;
     }
+
     async _getPublicKeyFromBc({ username } = {}) {
         try {
             const accountData = await RPC.get_account(username);
@@ -129,10 +134,7 @@ class Auth extends Basic {
             });
         } catch (error) {
             Logger.error(JSON.stringify(error, null, 4));
-            throw {
-                code: 11011,
-                message: 'Cannot get such account from BC',
-            };
+            throw { code: 11011, message: 'Cannot get such account from BC' };
         }
     }
 
