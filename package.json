@@ -1,0 +1,45 @@
+{
+  "name": "auth-service",
+  "version": "2.0.0",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GolosChain/auth-service.git"
+  },
+  "author": "golos.io",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/GolosChain/auth-service/issues"
+  },
+  "homepage": "https://github.com/GolosChain/auth-service#readme",
+  "description": "**Auth service** является сервисом для авторизации запросов к [golos.io](https://golos.io). Для работы сервису необходим совместимый фасад-сервис, осуществляющий конечное общение с системой.",
+  "dependencies": {
+    "cyberwayjs": "^20.0.0-beta7",
+    "eosjs-ecc": "^4.0.4",
+    "gls-core-service": "^3.42.1",
+    "node-fetch": "^2.3.0",
+    "randomstring": "^1.1.5"
+  },
+  "devDependencies": {},
+  "prettier": {
+    "singleQuote": true,
+    "tabWidth": 4,
+    "semi": true,
+    "trailingComma": "es5",
+    "printWidth": 100,
+    "overrides": [
+      {
+        "files": [
+          "*.yml",
+          "*.json"
+        ],
+        "options": {
+          "tabWidth": 2
+        }
+      }
+    ]
+  }
+}
