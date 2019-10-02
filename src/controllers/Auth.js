@@ -67,11 +67,27 @@ class Auth extends Basic {
                 roles: [],
                 permission: publicKeysPermission,
             };
-        } catch (error) {
+        } catch (originalError) {
             if (user.includes('@')) {
-                throw error;
+                throw originalError;
             } else {
-                return await this.authorize({ user: `${user}@golos`, sign, secret, channelId });
+                try {
+                    return await this.authorize({ user: `${user}@golos`, sign, secret, channelId });
+                } catch (error) {
+                    if (error && error.json && error.json.error) {
+                        const err = error.json.error;
+
+                        if (
+                            err.name === 'username_query_exception' &&
+                            err.details.length &&
+                            err.details[0].message.includes(' not found in scope')
+                        ) {
+                            throw originalError;
+                        }
+                    }
+
+                    throw error;
+                }
             }
         }
     }
@@ -84,7 +100,7 @@ class Auth extends Basic {
                 names.accountName = resolved[0].resolved_username;
                 names.displayName = user.split('@')[0];
             } catch (error) {
-                Logger.error('Error resolve account name -- ', JSON.stringify(error, null, 4));
+                Logger.error('Error resolve account name:', JSON.stringify(error, null, 4));
             }
         }
         return names;
