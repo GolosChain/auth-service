@@ -17,7 +17,11 @@ class Auth extends Basic {
     }
 
     // TODO Refactor in next iteration
-    async authorize({ user, sign, secret, channelId }) {
+    async authorize(params) {
+        return await this._authorize(params);
+    }
+
+    async _authorize({ user, sign, secret, channelId }) {
         this._verifyParamsOrThrow({ user, sign, secret, channelId });
 
         const storedSecret = this._secretMap.get(channelId);
@@ -68,42 +72,51 @@ class Auth extends Basic {
                 permission: publicKeysPermission,
             };
         } catch (originalError) {
-            if (user.includes('@')) {
-                throw originalError;
-            } else {
+            if (!user.includes('@')) {
                 try {
-                    return await this.authorize({ user: `${user}@golos`, sign, secret, channelId });
+                    return await this._authorize({
+                        user: `${user}@golos`,
+                        sign,
+                        secret,
+                        channelId,
+                    });
                 } catch (error) {
-                    if (error && error.json && error.json.error) {
-                        const err = error.json.error;
-
-                        if (
-                            err.name === 'username_query_exception' &&
-                            err.details.length &&
-                            err.details[0].message.includes(' not found in scope')
-                        ) {
-                            throw originalError;
-                        }
+                    // Если пользователь user@golos вообще не найден, то выдаем первичную ошибку.
+                    if (
+                        error.name === 'username_query_exception' &&
+                        error.details.length &&
+                        error.details[0].message.includes(' not found in scope ')
+                    ) {
+                        throw originalError;
                     }
 
                     throw error;
                 }
             }
+
+            throw originalError;
         }
     }
 
     async _resolveNames(user) {
-        const names = { displayName: user, accountName: user };
         if (user.includes('@')) {
             try {
                 const resolved = await RPC.fetch('/v1/chain/resolve_names', [user]);
-                names.accountName = resolved[0].resolved_username;
-                names.displayName = user.split('@')[0];
+
+                return {
+                    accountName: resolved[0].resolved_username,
+                    displayName: user.split('@')[0],
+                };
             } catch (error) {
-                Logger.error('Error resolve account name:', JSON.stringify(error, null, 4));
+                if (error && error.json && error.json.error) {
+                    throw error.json.error;
+                } else {
+                    throw error;
+                }
             }
+        } else {
+            return { displayName: user, accountName: user };
         }
-        return names;
     }
 
     _verifyParamsOrThrow({ user, sign, secret, channelId }) {
