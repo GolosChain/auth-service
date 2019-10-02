@@ -40,7 +40,7 @@ class Auth extends Basic {
         const { displayName, accountName } = await this._resolveNames(user);
 
         try {
-            const publicKeys = await this._getPublicKeyFromBc({ username: accountName });
+            const publicKeys = await this._getPublicKeyFromBc(accountName);
 
             const publicKeysPermission = this._verifyKeys({
                 secretBuffer,
@@ -122,18 +122,23 @@ class Auth extends Basic {
         return false;
     }
 
-    async _getPublicKeyFromBc({ username } = {}) {
+    async _getPublicKeyFromBc(userId) {
         try {
-            const accountData = await RPC.get_account(username);
+            const accountData = await RPC.get_account(userId);
 
-            return accountData.permissions.map(permission => {
-                return {
-                    publicKey: convertLegacyPublicKey(permission.required_auth.keys[0].key),
-                    permission: permission.perm_name,
-                };
-            });
+            return accountData.permissions.map(permission => ({
+                publicKey: convertLegacyPublicKey(permission.required_auth.keys[0].key),
+                permission: permission.perm_name,
+            }));
         } catch (error) {
-            Logger.error(JSON.stringify(error, null, 4));
+            if (error && error.json && error.json.error) {
+                if (error.json.error.name !== 'chaindb_midx_find_exception') {
+                    Logger.error('getPublicKeyFromBc failed:', error.json.error);
+                }
+            } else {
+                Logger.error('getPublicKeyFromBc failed:', JSON.stringify(error, null, 4));
+            }
+
             throw { code: 11011, message: 'Cannot get such account from BC' };
         }
     }
