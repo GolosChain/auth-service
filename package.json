@@ -20,7 +20,7 @@
     "cyberwayjs": "^20.0.0-beta7",
     "eosjs-ecc": "^4.0.4",
     "gls-core-service": "^3.42.1",
-    "node-fetch": "^2.3.0",
+    "node-fetch": "^2.6.1",
     "randomstring": "^1.1.5"
   },
   "devDependencies": {},
